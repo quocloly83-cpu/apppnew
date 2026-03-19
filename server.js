@@ -34,9 +34,10 @@ app.use((req, res, next) => {
 
 app.use((req, res, next) => {
   const ip =
-    req.headers["x-forwarded-for"]?.toString().split(",")[0].trim() ||
-    req.socket.remoteAddress ||
-    "unknown";
+    (req.headers["x-forwarded-for"] || "")
+      .toString()
+      .split(",")[0]
+      .trim() || req.socket.remoteAddress || "unknown";
 
   const now = Date.now();
   const windowMs = 15000;
@@ -88,18 +89,24 @@ function verifySessionToken(token) {
     const parts = raw.split("|");
     if (parts.length !== 5) return null;
 
-    const [key, device, expireAt, issuedAt, sig] = parts;
+    const key = parts[0];
+    const device = parts[1];
+    const expireAt = parts[2];
+    const issuedAt = parts[3];
+    const sig = parts[4];
+
     const payload = ${key}|${device}|${expireAt}|${issuedAt};
     const check = signText(payload);
+
     if (sig !== check) return null;
 
     return {
-      key,
-      device,
+      key: key,
+      device: device,
       expireAt: Number(expireAt),
       issuedAt: Number(issuedAt)
     };
-  } catch {
+  } catch (e) {
     return null;
   }
 }
@@ -109,8 +116,8 @@ function renderHomeHtml() {
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AimTrickHead</title>
   <style>
     body{
@@ -119,8 +126,10 @@ function renderHomeHtml() {
     }
     .box{
       width:min(92vw,430px);padding:24px;border-radius:24px;
-      background:rgba(255,255,255,.04);border:1px solid rgba(180,120,255,.22);
-      box-shadow:0 0 30px rgba(180,120,255,.12);text-align:center
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(180,120,255,.22);
+      box-shadow:0 0 30px rgba(180,120,255,.12);
+      text-align:center
     }
     h1{margin-top:0;color:#d8b4ff}
     a{
@@ -146,8 +155,8 @@ function renderPanelHtml() {
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AimTrickHead VIP</title>
   <style>
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -209,32 +218,23 @@ function renderPanelHtml() {
         linear-gradient(160deg,#030207,#0b0612,#05040b);
       transition:opacity .6s ease, visibility .6s ease;
     }
-    .splash.hide{
-      opacity:0;visibility:hidden;
-    }
+    .splash.hide{opacity:0;visibility:hidden}
     .splashLogo{
       width:170px;height:170px;border-radius:28px;overflow:hidden;
       box-shadow:0 0 30px rgba(183,124,255,.28),0 0 70px rgba(255,111,216,.12);
       animation:glow 3s infinite, popIn .7s ease;
       background:rgba(255,255,255,.03);
     }
-    .splashLogo img{
-      width:100%;height:100%;object-fit:cover;display:block;
-    }
+    .splashLogo img{width:100%;height:100%;object-fit:cover;display:block}
     .splashText{
       margin-top:18px;font-size:16px;color:var(--violet);font-weight:800;letter-spacing:1px;
       animation:pulseText 2s infinite;
     }
-    .splashSub{
-      margin-top:8px;color:#cbbddf;font-size:12px;
-    }
-    .wrap{
-      min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px
-    }
+    .splashSub{margin-top:8px;color:#cbbddf;font-size:12px}
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px}
     .card{
       width:min(95vw,560px);border-radius:30px;background:var(--card);
-      border:1px solid rgba(215,180,255,.18);
-      animation:glow 4s infinite;
+      border:1px solid rgba(215,180,255,.18);animation:glow 4s infinite;
       overflow:hidden;backdrop-filter:blur(16px)
     }
     .top{
@@ -257,13 +257,8 @@ function renderPanelHtml() {
       box-shadow:0 0 18px rgba(183,124,255,.35);flex:0 0 72px;
       background:rgba(255,255,255,.04)
     }
-    .logo img{
-      width:100%;height:100%;object-fit:cover;display:block
-    }
-    .title{
-      margin:0;font-size:30px;color:var(--violet);
-      animation:pulseText 3s infinite
-    }
+    .logo img{width:100%;height:100%;object-fit:cover;display:block}
+    .title{margin:0;font-size:30px;color:var(--violet);animation:pulseText 3s infinite}
     .sub{margin:6px 0 0;color:var(--muted);font-size:13px}
     .credit{margin-top:10px;color:var(--gold);font-size:12px;font-weight:700}
     .content{padding:16px}
@@ -286,12 +281,9 @@ function renderPanelHtml() {
     .ok{color:var(--ok)}
     .err{color:var(--err)}
     .hidden{display:none!important}
-    .topLine{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px
-    }
+    .topLine{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
     .pill{
-      display:inline-flex;align-items:center;gap:8px;
-      padding:10px 12px;border-radius:999px;
+      display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:999px;
       background:rgba(255,255,255,.06);border:1px solid var(--line);font-size:12px;color:#f0e6ff
     }
     .timeBox{
@@ -307,16 +299,11 @@ function renderPanelHtml() {
     .countdown{
       margin-top:8px;font-size:26px;font-weight:900;color:var(--violet);letter-spacing:1px;position:relative;z-index:1
     }
-    .tabs{
-      display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0 14px
-    }
+    .tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0 14px}
     .tab{
-      height:44px;border-radius:14px;border:1px solid var(--line);
-      background:rgba(255,255,255,.05)
+      height:44px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.05)
     }
-    .tab.active{
-      background:linear-gradient(90deg,#8c52ff,#c86bff,#ff70c7)
-    }
+    .tab.active{background:linear-gradient(90deg,#8c52ff,#c86bff,#ff70c7)}
     .tabPane{display:none}
     .tabPane.active{display:block}
     .tile{
@@ -325,10 +312,7 @@ function renderPanelHtml() {
       border:1px solid var(--line);position:relative;overflow:hidden;
       transition:transform .2s ease, box-shadow .2s ease
     }
-    .tile:hover{
-      transform:translateY(-2px);
-      box-shadow:0 0 18px rgba(183,124,255,.12)
-    }
+    .tile:hover{transform:translateY(-2px);box-shadow:0 0 18px rgba(183,124,255,.12)}
     .tile::before{
       content:"";position:absolute;width:140px;height:140px;right:-40px;bottom:-40px;
       background:radial-gradient(circle, rgba(183,124,255,.16), transparent 65%)
@@ -347,30 +331,24 @@ function renderPanelHtml() {
       background:#fff;transition:.25s
     }
     .switch input:checked + .slider{
-      background:linear-gradient(90deg,#8c52ff,#ff70c7);
-      box-shadow:0 0 18px rgba(200,107,255,.25)
+      background:linear-gradient(90deg,#8c52ff,#ff70c7);box-shadow:0 0 18px rgba(200,107,255,.25)
     }
     .switch input:checked + .slider:before{transform:translateX(25px)}
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .socialBtn{
-      display:flex;align-items:center;justify-content:center;gap:10px;
-      height:50px;border-radius:14px;text-decoration:none;color:#fff;
-      background:rgba(255,255,255,.07);border:1px solid var(--line);font-weight:700
+      display:flex;align-items:center;justify-content:center;gap:10px;height:50px;border-radius:14px;
+      text-decoration:none;color:#fff;background:rgba(255,255,255,.07);border:1px solid var(--line);font-weight:700
     }
     .socialBtn:hover{box-shadow:0 0 16px rgba(255,255,255,.08)}
     .footer{margin-top:10px;text-align:center;font-size:12px;color:#b9b0c9;line-height:1.6}
     .liveFx{
-      margin-top:10px;padding:10px 12px;border-radius:14px;
-      background:rgba(255,255,255,.05);border:1px solid var(--line);
-      color:#f1e8ff;font-size:12px;min-height:38px
+      margin-top:10px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.05);
+      border:1px solid var(--line);color:#f1e8ff;font-size:12px;min-height:38px
     }
-    .fxLine{
-      display:inline-block;animation:pulseText 1.6s infinite
-    }
+    .fxLine{display:inline-block;animation:pulseText 1.6s infinite}
     .sliderWrap{margin-top:10px}
     .rangeLabel{
-      display:flex;align-items:center;justify-content:space-between;
-      font-size:12px;color:#e5dcf5;margin-bottom:8px
+      display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#e5dcf5;margin-bottom:8px
     }
     input[type=range]{width:100%;accent-color:#c86bff}
     .toast{
@@ -443,94 +421,20 @@ function renderPanelHtml() {
           </div>
 
           <div id="tab1" class="tabPane active">
-            <div class="tile">
-              <div class="row">
-                <div>
-                  <p class="name">Giảm Tình Trạng Rung Tâm</p>
-                  <p class="desc">Tác dụng phản ngồi ngay sau khi bật</p>
-                </div>
-                <label class="switch">
-                  <input type="checkbox" id="f1" onchange="toggleFx(this,'Giảm Tình Trạng Rung Tâm')">
-                  <span class="slider"></span>
-                </label>
-              </div>
-            </div>
-
-            <div class="tile">
-              <div class="row">
-                <div>
-                  <p class="name">AimTrickHead</p>
-                  <p class="desc">Tác dụng phản ngồi ngay sau khi bật</p>
-                </div>
-                <label class="switch">
-                  <input type="checkbox" id="f2" onchange="toggleFx(this,'AimTrickHead')">
-                  <span class="slider"></span>
-                </label>
-              </div>
-            </div>
-
-            <div class="tile">
-              <div class="row">
-                <div>
-                  <p class="name">Bám Đầu</p>
-                  <p class="desc">Tác dụng phản ngồi ngay sau khi bật</p>
-                </div>
-                <label class="switch">
-                  <input type="checkbox" id="f3" onchange="toggleFx(this,'Bám Đầu')">
-                  <span class="slider"></span>
-                </label>
-              </div>
-            </div>
-
-            <div class="tile">
-              <div class="row">
-                <div>
-                  <p class="name">Nhẹ Tâm</p>
-                  <p class="desc">Tác dụng phản ngồi ngay sau khi bật</p>
-                </div>
-                <label class="switch">
-                  <input type="checkbox" id="f4" onchange="toggleFx(this,'Nhẹ Tâm')">
-                  <span class="slider"></span>
-                </label>
-              </div>
-            </div>
+            <div class="tile"><div class="row"><div><p class="name">Giảm Tình Trạng Rung Tâm</p><p class="desc">Tác dụng phản ngồi ngay sau khi bật</p></div><label class="switch"><input type="checkbox" id="f1" onchange="toggleFx(this,'Giảm Tình Trạng Rung Tâm')"><span class="slider"></span></label></div></div>
+            <div class="tile"><div class="row"><div><p class="name">AimTrickHead</p><p class="desc">Tác dụng phản ngồi ngay sau khi bật</p></div><label class="switch"><input type="checkbox" id="f2" onchange="toggleFx(this,'AimTrickHead')"><span class="slider"></span></label></div></div>
+            <div class="tile"><div class="row"><div><p class="name">Bám Đầu</p><p class="desc">Tác dụng phản ngồi ngay sau khi bật</p></div><label class="switch"><input type="checkbox" id="f3" onchange="toggleFx(this,'Bám Đầu')"><span class="slider"></span></label></div></div>
+            <div class="tile"><div class="row"><div><p class="name">Nhẹ Tâm</p><p class="desc">Tác dụng phản ngồi ngay sau khi bật</p></div><label class="switch"><input type="checkbox" id="f4" onchange="toggleFx(this,'Nhẹ Tâm')"><span class="slider"></span></label></div></div>
           </div>
 
           <div id="tab2" class="tabPane">
-            <div class="tile">
-              <div class="row">
-                <div>
-                  <p class="name">Tối Ưu Mạnh</p>
-                  <p class="desc">Tác dụng phản ngồi ngay sau khi bật</p>
-                </div>
-                <label class="switch">
-                  <input type="checkbox" id="f5" onchange="toggleFx(this,'Tối Ưu Mạnh')">
-                  <span class="slider"></span>
-                </label>
-              </div>
-            </div>
-
-            <div class="tile">
-              <div class="row">
-                <div>
-                  <p class="name">Buff Nhạy x Nhẹ Tâm</p>
-                  <p class="desc">Tác dụng phản ngồi ngay sau khi bật</p>
-                </div>
-                <label class="switch">
-                  <input type="checkbox" id="f6" onchange="toggleFx(this,'Buff Nhạy x Nhẹ Tâm')">
-                  <span class="slider"></span>
-                </label>
-              </div>
-            </div>
-
+            <div class="tile"><div class="row"><div><p class="name">Tối Ưu Mạnh</p><p class="desc">Tác dụng phản ngồi ngay sau khi bật</p></div><label class="switch"><input type="checkbox" id="f5" onchange="toggleFx(this,'Tối Ưu Mạnh')"><span class="slider"></span></label></div></div>
+            <div class="tile"><div class="row"><div><p class="name">Buff Nhạy x Nhẹ Tâm</p><p class="desc">Tác dụng phản ngồi ngay sau khi bật</p></div><label class="switch"><input type="checkbox" id="f6" onchange="toggleFx(this,'Buff Nhạy x Nhẹ Tâm')"><span class="slider"></span></label></div></div>
             <div class="tile">
               <p class="name">Sensi Control</p>
               <p class="desc">Tác dụng phản ngồi ngay sau khi bật</p>
               <div class="sliderWrap">
-                <div class="rangeLabel">
-                  <span>Level</span>
-                  <span id="sensiValue">60</span>
-                </div>
+                <div class="rangeLabel"><span>Level</span><span id="sensiValue">60</span></div>
                 <input type="range" min="1" max="120" value="60" id="sensiRange" oninput="updateSensi(this.value)">
               </div>
             </div>
@@ -724,7 +628,6 @@ function renderPanelHtml() {
 
     async function dangNhap() {
       const key = document.getElementById("keyInput").value.trim();
-
       if (!key) {
         setMsg("Vui lòng nhập key.", "err");
         return;
@@ -761,12 +664,10 @@ function renderPanelHtml() {
     function toggleFx(el, label) {
       luuTrangThai();
       if (el.checked) {
-        liveFxBox.innerHTML =
-          '<span class="fxLine">⚡ ' + label + " -> ACTIVE...</span>";
+        liveFxBox.innerHTML = '<span class="fxLine">⚡ ' + label + ' -> ACTIVE...</span>';
         showToast(label + " đã bật", "ok");
       } else {
-        liveFxBox.innerHTML =
-          '<span class="fxLine">⚡ ' + label + " -> OFF</span>";
+        liveFxBox.innerHTML = '<span class="fxLine">⚡ ' + label + ' -> OFF</span>';
         showToast(label + " đã tắt", "err");
       }
     }
@@ -774,18 +675,17 @@ function renderPanelHtml() {
     function updateSensi(val) {
       sensiValue.textContent = val;
       localStorage.setItem("ath_sensi", String(val));
-      liveFxBox.innerHTML =
-        '<span class="fxLine">⚡ Sensi tuned -> ' + val + "</span>";
+      liveFxBox.innerHTML = '<span class="fxLine">⚡ Sensi tuned -> ' + val + '</span>';
     }
 
     function luuTrangThai() {
       const state = {
-        f1: document.getElementById("f1")?.checked || false,
-        f2: document.getElementById("f2")?.checked || false,
-        f3: document.getElementById("f3")?.checked || false,
-        f4: document.getElementById("f4")?.checked || false,
-        f5: document.getElementById("f5")?.checked || false,
-        f6: document.getElementById("f6")?.checked || false
+        f1: document.getElementById("f1") ? document.getElementById("f1").checked : false,
+        f2: document.getElementById("f2") ? document.getElementById("f2").checked : false,
+        f3: document.getElementById("f3") ? document.getElementById("f3").checked : false,
+        f4: document.getElementById("f4") ? document.getElementById("f4").checked : false,
+        f5: document.getElementById("f5") ? document.getElementById("f5").checked : false,
+        f6: document.getElementById("f6") ? document.getElementById("f6").checked : false
       };
       localStorage.setItem("ath_state", JSON.stringify(state));
     }
@@ -799,7 +699,8 @@ function renderPanelHtml() {
         });
 
         const savedSensi = localStorage.getItem("ath_sensi") || "60";
-        document.getElementById("sensiRange").value = savedSensi;
+        const sensiRange = document.getElementById("sensiRange");
+        if (sensiRange) sensiRange.value = savedSensi;
         sensiValue.textContent = savedSensi;
       } catch (e) {}
     }
@@ -813,7 +714,8 @@ function renderPanelHtml() {
           p.classList.remove("active");
         });
         btn.classList.add("active");
-        document.getElementById(btn.dataset.tab).classList.add("active");
+        const pane = document.getElementById(btn.dataset.tab);
+        if (pane) pane.classList.add("active");
       });
     });
 
@@ -870,18 +772,14 @@ function renderAdminHtml() {
   <div class="wrap">
     <div class="box">
       <h1>Admin Tạo Key</h1>
-
       <input id="adminKey" type="password" placeholder="Admin Key">
       <input id="customKey" placeholder="Key muốn tạo (để trống = tự random)">
-
       <div class="row">
         <input id="uses" type="number" value="50" placeholder="Số lượt dùng">
         <input id="days" type="number" value="30" placeholder="Số ngày sử dụng">
       </div>
-
       <button onclick="taoKey()">Tạo Key</button>
       <button onclick="taiDanhSach()">Tải danh sách key</button>
-
       <div id="result"></div>
       <div id="list"></div>
     </div>
@@ -901,11 +799,7 @@ function renderAdminHtml() {
         const res = await fetch("/api/create?admin=" + encodeURIComponent(adminKey), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            key: customKey,
-            uses: uses,
-            days: days
-          })
+          body: JSON.stringify({ key: customKey, uses: uses, days: days })
         });
 
         const data = await res.json();
@@ -942,7 +836,6 @@ function renderAdminHtml() {
         }
 
         const entries = Object.entries(data);
-
         if (!entries.length) {
           box.innerHTML = "Chưa có key nào.";
           return;
@@ -970,13 +863,11 @@ function renderAdminHtml() {
 
     async function xoaKey(key) {
       const adminKey = document.getElementById("adminKey").value.trim();
-
       await fetch("/api/delete?admin=" + encodeURIComponent(adminKey), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key: key })
       });
-
       taiDanhSach();
     }
   </script>
